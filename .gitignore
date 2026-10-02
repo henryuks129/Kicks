@@ -5,6 +5,8 @@ build/
 .next/
 out/
 coverage/
+.vite/
+*.tsbuildinfo
 
 # Secrets and local configuration — never commit these
 .env
@@ -20,9 +22,24 @@ coverage/
 .vscode/
 .turbo/
 .vercel/
+.cache/
+.npm/
+.eslintcache
+.fallow/
+.kilo/
+.impeccable/*.cache.json
+supabase/.temp/
+supabase/.branches/
+*.swp
+*.swo
+*~
+Thumbs.db
 
 # Generated media and local QA output
 screenshots/
 recordings/
 tmp/
 work/
+test-results/
+playwright-report/
+blob-report/
