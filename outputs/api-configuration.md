@@ -1,7 +1,7 @@
 # API configuration template
 
 Placeholders only. Do not put actual credentials in this document.
-The current storefront does not consume these variables yet; this defines the configuration contract for integration.
+These are placeholders documenting the configuration used by the current storefront and server API. Do not paste real credentials into this file.
 
 ## React / Vite public configuration
 
@@ -10,8 +10,6 @@ Copy these into your local `.env.local` yourself. Only public values belong in V
 ```dotenv
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
-# Optional: needed if we use Paystack Inline in the browser.
-VITE_PAYSTACK_PUBLIC_KEY=YOUR_PAYSTACK_TEST_PUBLIC_KEY
 ```
 
 ## Server configuration
@@ -19,18 +17,18 @@ VITE_PAYSTACK_PUBLIC_KEY=YOUR_PAYSTACK_TEST_PUBLIC_KEY
 Set these in the backend deployment's secrets/settings when the backend is connected. Never prefix these secrets with VITE_.
 
 ```dotenv
-SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=YOUR_SUPABASE_SECRET_KEY
 PAYSTACK_SECRET_KEY=YOUR_PAYSTACK_TEST_SECRET_KEY
-MAILGUN_API_KEY=YOUR_MAILGUN_API_KEY
-MAILGUN_DOMAIN=YOUR_VERIFIED_MAILGUN_DOMAIN
-MAILGUN_API_BASE_URL=https://api.mailgun.net
-MAILGUN_FROM="Kicks <orders@YOUR_VERIFIED_MAILGUN_DOMAIN>"
-APP_URL=http://localhost:5173
-DEMO_PAYMENTS_ENABLED=false
+MAILERSEND_API_KEY=YOUR_MAILERSEND_API_TOKEN
+MAILERSEND_FROM_EMAIL=EXACT_SENDER_FROM_MAILERSEND
+MAILERSEND_FROM_NAME=Kicks
+MAILERSEND_REPLY_TO_EMAIL=YOUR_ACTUAL_INBOX
+VITE_APP_URL=https://YOUR_STOREFRONT_ORIGIN
+ENABLE_DEMO_PAYMENTS=false
 ```
 
-Use https://api.eu.mailgun.net for an EU-region Mailgun domain. Use matching Paystack test keys during development. Demo payment enablement must be enforced by the backend, never by a browser checkbox alone.
+The MailerSend sender address must be authorized for a sending domain in your account. Keep the previous Resend credentials until MailerSend is verified, then remove them from the environment. Use matching Paystack test keys during development. Demo payment enablement is enforced by the backend, never by a browser checkbox alone.
 
 ## Google OAuth — configure in Supabase
 
@@ -48,6 +46,7 @@ Create a Web application OAuth client in Google Cloud. Add the callback URL show
 
 - [Supabase Google sign-in](https://supabase.com/docs/guides/auth/social-login/auth-google)
 - [Paystack authentication and key types](https://paystack.com/docs/api/authentication/)
-- [Mailgun API regions](https://documentation.mailgun.com/docs/mailgun/api-reference/api-overview)
+- [MailerSend send email API](https://developers.mailersend.com/api/v1/email)
+- [MailerSend Activity API](https://developers.mailersend.com/api/v1/email/activity)
 
 No .env files were inspected or edited when creating this template.

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @theme {
-  --font-sans: Arial, Helvetica, sans-serif;
+  --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
   --color-background: #f4f2eb;
   --color-foreground: #22231f;
   --color-muted: #e8e6de;
@@ -12,6 +13,11 @@
 }
 @layer base {
   body { @apply m-0 bg-background font-sans text-foreground antialiased; }
+  h1, h2 { font-family: var(--font-display); }
   button, a, input, select { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring; }
   button:not(:disabled), select { cursor: pointer; }
+}
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: url('/cursor-sole.svg') 5 3, auto; }
+  a, button:not(:disabled), select, summary { cursor: url('/cursor-sole.svg') 5 3, pointer; }
 }

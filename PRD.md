@@ -6,7 +6,7 @@ Build Kicks, a sneaker shop featuring Nike, Adidas, Puma and selected sports and
 
 ## Assignment baseline vs project scope
 
-The attached assignment asks for a shop website with checkout, persistent data, Google authentication, and confirmation email. This project makes the providers explicit: Supabase for database and auth, Mailgun for email, and Paystack for payment. It also adds profile details, a welcome email, receipt email, a motion hero, strict secret handling, and duplicate-code prevention.
+The attached assignment asks for a shop website with checkout, persistent data, Google authentication, and confirmation email. This project uses Supabase for database and auth, MailerSend for email, and Paystack for payment. It also adds profile details, a welcome email, receipt email, a motion hero, strict secret handling, and duplicate-code prevention.
 
 ## Primary user journey
 
@@ -22,7 +22,7 @@ Discover shoes → view product details → select EU size → add to cart → s
 6. Paystack checkout with server-side transaction verification.
 7. Demo payment mode for development: creates a test transaction/order only when explicitly enabled; no real charge.
 8. Supabase records for profiles, products, orders, and order items, protected with RLS.
-9. Mailgun welcome email after first registration and order confirmation/receipt after verified order processing.
+9. MailerSend welcome email after first registration and order confirmation/receipt after verified order processing.
 10. Order success page with order reference and status; do not show success before persistence/payment handling succeeds.
 
 ## Email strategy without real payment
@@ -32,7 +32,7 @@ Use two safe paths:
 - Registration: trigger a welcome email from the auth/profile flow, guarded by a `welcome_email_sent_at` field or equivalent idempotency record.
 - Orders: use a demo-payment feature flag in development/staging. The demo endpoint must create an explicitly `demo_paid` order and call the same receipt-mail service used after Paystack verification. The email must say “Demo order” or equivalent so it cannot be confused with a real charge.
 
-Mailgun sandbox/authorized recipient restrictions may apply. Record that as provider verification, not as a code failure.
+MailerSend requires an authorized sender/domain and a server-side API token. Record provider setup and delivery as a separate verification step, not as a code failure.
 
 ## Out of scope
 

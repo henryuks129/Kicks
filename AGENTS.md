@@ -10,7 +10,7 @@ Build Kicks, a small sneaker storefront. Keep the scope focused: shoe catalog, s
 - Users can browse products, add and remove items from a cart, change quantities, and see an order total.
 - Users can enter and persist the information needed for an order: name, email, phone, and delivery address.
 - Users can pay through Paystack in production mode.
-- After a verified successful order, persist the order in Supabase and send a confirmation/receipt email through Mailgun.
+- After a verified successful order, persist the order in Supabase and send a confirmation/receipt email through MailerSend.
 - New users receive a welcome email after registration. Do not send it repeatedly on every login.
 - Development and demo environments must support a clearly labelled simulated payment path. It must exercise the same order and email pipeline without charging a card. Never pretend a simulated payment was a real Paystack transaction.
 
@@ -18,7 +18,7 @@ Build Kicks, a small sneaker storefront. Keep the scope focused: shoe catalog, s
 
 - Never read, print, expose, commit, upload, or modify `.env`, `.env.*`, or any secret-bearing file. Treat this as a strict rule.
 - Use environment variable names and server-side boundaries, but use placeholders in documentation and examples.
-- Keep Paystack secret keys, Mailgun API keys, and Supabase service-role credentials server-side only. The browser may receive public Supabase configuration and Paystack public key only.
+- Keep Paystack secret keys, MailerSend API tokens, and Supabase service-role credentials server-side only. The browser may receive public Supabase configuration and Paystack public key only.
 - Verify Paystack transactions server-side before marking an order paid or sending a paid-order receipt.
 - Apply Supabase Row Level Security so a customer can access only their own profile, cart, and orders.
 - Never trust client-submitted prices, totals, payment status, or user identity.
@@ -45,4 +45,4 @@ Build Kicks, a small sneaker storefront. Keep the scope focused: shoe catalog, s
 
 - Test auth, logout, cart persistence, profile/order details, simulated payment, real Paystack verification boundaries, welcome email deduplication, and paid-order receipt behavior.
 - Distinguish local tests, browser checks, provider sandbox checks, and deployment checks in reports.
-- Never claim that local tests prove Google, Mailgun, Paystack, or Supabase production configuration works.
+- Never claim that local checks prove Google, MailerSend, Paystack, or Supabase production configuration works.

@@ -11,6 +11,15 @@ test('migrations, customer isolation, server authority and payment idempotency',
  grant usage on schema auth,public to anon,authenticated,service_role;
  grant execute on function auth.uid() to authenticated;`);
  for(const file of ['202610010001_commerce.sql','202610010002_demo_catalog.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
+ const catalog=await readFile(new URL('../supabase/migrations/202610020002_reference_catalog.sql',import.meta.url),'utf8');
+ await db.exec(await readFile(new URL('../supabase/migrations/202610020001_signin_email.sql',import.meta.url),'utf8'));
+ await db.exec(catalog);
+ assert.equal((await db.query('select count(*)::integer as count from products')).rows[0].count,12);
+ assert.equal((await db.query("select count(*)::integer as count from product_variants where product_id='koi-loafer'")).rows[0].count,7);
+ await db.query("update product_variants set stock=3 where product_id='koi-loafer' and size=42");
+ await db.exec(catalog);
+ assert.equal((await db.query('select count(*)::integer as count from products')).rows[0].count,12);
+ assert.equal((await db.query("select stock from product_variants where product_id='koi-loafer' and size=42")).rows[0].stock,3);
  const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
  await db.query('insert into auth.users(id) values($1),($2)',[a,b]);
  assert.equal((await db.query('select * from public.email_events')).rows.length,2);

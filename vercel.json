@@ -1,1 +1,13 @@
-{"rewrites":[{"source":"/payment/callback","destination":"/index.html"}]}
+{
+  "rewrites": [
+    {
+      "source": "/payment/callback",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "public/receipt-products/*.png"
+    }
+  }
+}

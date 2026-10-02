@@ -27,7 +27,7 @@ coverage/
 .eslintcache
 .fallow/
 .kilo/
-.impeccable/*.cache.json
+.impeccable/
 supabase/.temp/
 supabase/.branches/
 *.swp

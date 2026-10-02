@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
-import { checkPayment, validSignature, receiptHtml } from '../server/services.js'
+import { checkPayment, validSignature, receiptHtml, receiptImageUrl } from '../server/services.js'
 test('payment acceptance requires all verified fields',()=>{
  const expected={reference:'abc',amount_kobo:10000,mode:'test'};
  const valid={reference:'abc',amount:10000,domain:'test',status:'success',currency:'NGN'};
@@ -20,4 +20,14 @@ test('receipt escapes user input and identifies test payments',()=>{
  assert.ok(html.includes('Test order — no money charged'));
  assert.ok(!html.includes('<script>'));
  assert.ok(html.includes('&lt;script&gt;'));
+});
+
+test('receipt images use public HTTPS URLs and retain escaped product descriptions',()=>{
+ assert.equal(receiptImageUrl('samba-green','https://shop.example.com'), 'https://shop.example.com/products/samba-green.png');
+ assert.equal(receiptImageUrl('samba-green','http://localhost:5173'),null);
+ assert.equal(receiptImageUrl('javascript:alert(1)',undefined),null);
+ const html=receiptHtml({id:'order',mode:'test',total_kobo:100,delivery:{}},[{name:'Shoe <red>',size:42,quantity:1,unit_price_kobo:100,image:'https://shop.example.com/shoe.png'}],'ref');
+ assert.match(html,/<img src="https:\/\/shop.example.com\/shoe.png"/);
+ assert.match(html,/alt="Shoe &lt;red&gt;"/);
+ assert.match(html,/EU 42 × 1/);
 });
