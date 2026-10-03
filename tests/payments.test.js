@@ -16,8 +16,13 @@ test('webhooks require the exact signed payload',()=>{
  assert.equal(validSignature(raw,'invalid',key),false);
 });
 test('receipt escapes user input and identifies test payments',()=>{
- const html=receiptHtml({id:'order',mode:'test',total_kobo:10000,delivery:{name:'<script>alert(1)</script>',address:'Home',phone:'123'}},[{name:'Shoe',size:40,quantity:1,unit_price_kobo:10000}],'ref');
+ const html=receiptHtml({id:'735eb97d-19d1-4f2c-8cf5-21aa05764305',mode:'test',total_kobo:10000,delivery:{name:'<script>alert(1)</script>',address:'Home',phone:'123'}},[{name:'Shoe',size:40,quantity:1,unit_price_kobo:10000}],'ref');
  assert.ok(html.includes('Test order — no money charged'));
+ assert.match(html,/<h1[^>]*>Thanks for your order!<\/h1>/);
+ assert.ok(html.includes('Order #735EB97D'));
+ assert.ok(!html.includes('735eb97d-19d1-4f2c-8cf5-21aa05764305'));
+ assert.ok(!html.includes('<br>ref'));
+ assert.ok(html.indexOf('Test order — no money charged')>html.indexOf('Thanks for shopping with Kicks.'));
  assert.ok(!html.includes('<script>'));
  assert.ok(html.includes('&lt;script&gt;'));
 });

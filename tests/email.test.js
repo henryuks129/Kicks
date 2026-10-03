@@ -110,7 +110,9 @@ test('local receipt sends embedded catalog thumbnails and is not duplicated',asy
   const {db}=queue('receipt',{id:'order',status:'paid',mode:'demo',total_kobo:200,delivery:{email:'buyer@example.com'},payments:{reference:'ref'},order_items:[item,{...item,size:43}]});
   await sendPending(db,{id:'buyer',email:'buyer@example.com'});await sendPending(db,{id:'buyer',email:'buyer@example.com'});
   assert.equal(deliveries.length,1);
-  const payload=deliveries[0];assert.equal(payload.attachments.length,1);
+  const payload=deliveries[0];assert.equal(payload.attachments.length,2);
+  assert.match(payload.html,/background="cid:product-kicks-backdrop@kicks"/);
+  assert.equal((payload.html.match(/border-bottom:1px solid #eadfd4/g)||[]).length,6);
   const attachment=payload.attachments[0];assert.equal(attachment.disposition,'inline');
   assert.ok(payload.html.includes(`src="cid:${attachment.id}"`));
   assert.equal((payload.html.match(/src="cid:/g)||[]).length,2);

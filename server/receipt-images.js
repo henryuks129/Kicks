@@ -6,7 +6,7 @@ export const productImage = item => item.image || item.product_variants?.product
 // Embed only bundled catalog thumbnails, never arbitrary URLs or filesystem paths.
 export async function receiptImages(items) {
  const sources=new Map(),attachments=[]
- for(const item of items) {
+ for(const item of [...items,{image:'kicks-backdrop'}]) {
   const image=productImage(item)
   if(typeof image!=='string'||sources.has(image))continue
   const key=image.replace(/^\/products\//,'').replace(/\.png$/,'')
