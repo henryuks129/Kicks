@@ -20,7 +20,7 @@ export function Checkout({items}) {
  }
  return <form onSubmit={submit} className="grid gap-4">
   {[['name','Full name','text'],['phone','Phone','tel'],['address','Delivery address','text']].map(([key,label,type])=><label key={key} className="grid gap-2">{label}<input required maxLength={key==='address'?500:120} type={type} value={profile[key]} onChange={e=>setProfile({...profile,[key]:e.target.value})} className="rounded border p-3"/></label>)}
-  <p>Receipt email: {email}</p><p role="alert">{error}</p>
+  <p role="alert">{error}</p>
   {!items.length&&<p role="alert">Your bag is empty. Close checkout and add a shoe and size.</p>}
   <Button disabled={busy||!items.length||!email} type="submit" value="checkout">{busy?'Please wait…':`Paystack test checkout · ${money(items.reduce((sum,item)=>sum+item.price*item.qty,0))}`}</Button>
  </form>
