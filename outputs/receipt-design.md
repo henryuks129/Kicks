@@ -1,11 +1,13 @@
-# Receipt styling
+# Receipt and checkout handoff
 
-Approved brief: a large orange KICKS backdrop for the transactional receipt. Preserve totals, customer details, test labels, and embedded product images.
+Objective: short appreciation heading, eight-character uppercase order label, no test wording in the receipt, dividers between items, and an orange KICKS watermark beneath both the shoes and item text.
 
-Direction: existing Kicks burnt orange (#bd4f2b), warm paper backdrop, 104px italic wordmark above and a pale orange raster KICKS watermark behind the order contents, with separators beneath every product row. Email-safe inline styles and presentation tables; no external font or positioned overlays. The generated PNG repeats behind the content; production uses its public HTTPS URL and local email uses an inline CID attachment. Email clients that suppress backgrounds retain the readable warm paper panel. Product images retain descriptive alt text.
+The server renders the item panel as one inline PNG with Sharp: bundled thumbnails, names, EU sizes, quantities, amounts, separators and pale orange branding are composited together. This avoids depending on Gmail background-image support. The image has descriptive alt text; heading, order label, total and delivery details remain selectable HTML. Plain table rows remain the fallback for direct template calls without attachments. Full order/payment IDs remain in storage.
 
-Preview fixture uses synthetic customer details. Local rendering does not certify all email clients. Existing delivered emails do not change; the new design requires a new receipt after deployment.
+Checkout exposes Paystack only. The simulation API remains available for automated testing; its customer-facing button and redundant no-money paragraph were removed. The Paystack button still identifies test mode accurately. Payments remain in test mode.
 
-Follow-up: ProductCard now tracks its own add operation. Only the clicked button dims and says Adding; other cards retain their black appearance while the shared cart save lock prevents overlapping mutations. Local checks: 35 tests, production build, Fallow duplication, and diff whitespace checks. Push and deployment remain user-managed.
+Account email behavior: welcome events are unique per customer; sign-in events are unique per server-verified Supabase session. Successful events are not resent on refresh or repeat queue processing. Paid-order receipts remain separate.
 
-Receipt heading: Thanks for your order! Display the first eight order-ID characters in uppercase (for example #735EB97D), omit the long payment reference from the email, and retain full identifiers in the database. Test/simulation disclosure moves to small footer text. Background appearance in Gmail still requires a newly sent receipt; existing emails do not update.
+Files: server/receipt-images.js, server/email-format.js, server/services.js, src/components/Checkout.jsx, tests/email.test.js, tests/payments.test.js, tests/receipt-images.test.js, scripts/build-receipt-images.js, package.json and package-lock.json.
+
+Verification: generated item panel inspected with synthetic order data; tests, production build, Fallow and whitespace checks. Gmail delivery rendering still needs a new receipt. Restart the local Vite server so its imported API/template code reloads; deployed callbacks use the deployed code and need the local commits pushed by the user. Existing emails cannot update.

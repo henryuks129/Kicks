@@ -90,9 +90,9 @@ test('MailerSend sender validation errors are actionable and retryable',async()=
   for(const name of names){if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name]}
  }
 });
-test('simulated order receipts stay clearly labelled',()=>{
+test('receipt uses appreciation heading without testing copy',()=>{
  const html=receiptHtml({mode:'demo',id:'order',total_kobo:100,delivery:{name:'A',address:'B',phone:'C'}},[{name:'Shoe',size:42,quantity:1,unit_price_kobo:100}],'demo-ref');
- assert.match(html,/Simulated order — no money charged/);
+ assert.match(html,/Thanks for your order!/);assert.doesNotMatch(html,/no money charged/);
 });
 test('email queue failure cannot undo payment confirmation',async()=>{
  await assert.doesNotReject(sendAfterPayment({from(){throw new Error('Database unavailable')}},{id:'customer'}));
@@ -110,16 +110,16 @@ test('local receipt sends embedded catalog thumbnails and is not duplicated',asy
   const {db}=queue('receipt',{id:'order',status:'paid',mode:'demo',total_kobo:200,delivery:{email:'buyer@example.com'},payments:{reference:'ref'},order_items:[item,{...item,size:43}]});
   await sendPending(db,{id:'buyer',email:'buyer@example.com'});await sendPending(db,{id:'buyer',email:'buyer@example.com'});
   assert.equal(deliveries.length,1);
-  const payload=deliveries[0];assert.equal(payload.attachments.length,2);
-  assert.match(payload.html,/background="cid:product-kicks-backdrop@kicks"/);
-  assert.equal((payload.html.match(/border-bottom:1px solid #eadfd4/g)||[]).length,6);
+  const payload=deliveries[0];assert.equal(payload.attachments.length,1);
+  assert.match(payload.html,/src="cid:receipt-items@kicks"/);
+  assert.match(payload.html,/alt="Samba \/ EU 42 × 1/);
   const attachment=payload.attachments[0];assert.equal(attachment.disposition,'inline');
   assert.ok(payload.html.includes(`src="cid:${attachment.id}"`));
-  assert.equal((payload.html.match(/src="cid:/g)||[]).length,2);
+  assert.equal((payload.html.match(/src="cid:/g)||[]).length,1);
   assert.ok(!payload.html.includes('localhost'));
   const png=Buffer.from(attachment.content,'base64');assert.equal(png.subarray(1,4).toString(),'PNG');
-  assert.equal(png.readUInt32BE(16),176);assert.equal(png.readUInt32BE(20),176);
-  assert.ok(png.length<100000);assert.deepEqual(payload.to,[{email:'buyer@example.com'}]);
+  assert.equal(png.readUInt32BE(16),1152);assert.equal(png.readUInt32BE(20),512);
+  assert.ok(png.length<300000);assert.deepEqual(payload.to,[{email:'buyer@example.com'}]);
  } finally {
   globalThis.fetch=originalFetch;
   for(const name of names){if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name]}
@@ -168,5 +168,18 @@ test('concurrent queue processing submits an event only once',async()=>{
   const {db,updates}=queue();const user={id:'buyer',email:'buyer@example.com'};
   await Promise.all([sendPending(db,user),sendPending(db,user)]);
   assert.equal(calls,1);assert.equal(updates.at(-1).provider_message_id,'unique-id');
+ });
+});
+
+
+test('each fresh sign-in event sends once, while session restores cannot resend it',async()=>{
+ const deliveries=[];
+ await withMailer(async(url,request)=>{deliveries.push(JSON.parse(request.body));return new Response('',{status:202,headers:{'x-message-id':`signin-${deliveries.length}`}})},async()=>{
+  const customer={id:'customer',email:'buyer@example.com'};
+  const firstSession=queue('signin');
+  await sendPending(firstSession.db,customer);await sendPending(firstSession.db,customer);
+  assert.equal(deliveries.length,1);assert.equal(deliveries[0].subject,'You’re signed in to Kicks');
+  const freshSession=queue('signin');await sendPending(freshSession.db,customer);
+  assert.equal(deliveries.length,2);
  });
 });
