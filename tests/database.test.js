@@ -17,9 +17,17 @@ test('migrations, customer isolation, server authority and payment idempotency',
  assert.equal((await db.query('select count(*)::integer as count from products')).rows[0].count,12);
  assert.equal((await db.query("select count(*)::integer as count from product_variants where product_id='koi-loafer'")).rows[0].count,7);
  await db.query("update product_variants set stock=3 where product_id='koi-loafer' and size=42");
+ await db.query("update products set name='Existing name',price_kobo=12340000 where id='koi-loafer'");
  await db.exec(catalog);
+ assert.equal((await db.query("select name from products where id='koi-loafer'")).rows[0].name,'Existing name');
  assert.equal((await db.query('select count(*)::integer as count from products')).rows[0].count,12);
  assert.equal((await db.query("select stock from product_variants where product_id='koi-loafer' and size=42")).rows[0].stock,3);
+ for(const file of ['202610020003_email_reliability.sql','202610020004_catalog_copy.sql']) {
+  const sql=await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8');await db.exec(sql);await db.exec(sql);
+ }
+ assert.equal((await db.query("select stock from product_variants where product_id='koi-loafer' and size=42")).rows[0].stock,3);
+ assert.equal((await db.query("select price_kobo from products where id='koi-loafer'")).rows[0].price_kobo,12340000);
+ assert.ok(!(await db.query("select description from products where id='koi-loafer'")).rows[0].description.includes('supplied visual reference'));
  const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
  await db.query('insert into auth.users(id) values($1),($2)',[a,b]);
  assert.equal((await db.query('select * from public.email_events')).rows.length,2);

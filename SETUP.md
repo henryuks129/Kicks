@@ -8,6 +8,8 @@ In the Supabase SQL Editor, run these files in order, once:
 2. supabase/migrations/202610010002_demo_catalog.sql
 3. supabase/migrations/202610020001_signin_email.sql
 4. supabase/migrations/202610020002_reference_catalog.sql
+5. supabase/migrations/202610020003_email_reliability.sql
+6. supabase/migrations/202610020004_catalog_copy.sql
 
 Alternatively use Supabase CLI migrations against the correct linked project. The reference catalog migration adds six image-backed demo products and EU 39–45 variants. Prices and stock remain illustrative until seller data is confirmed. Apply it to the connected Supabase project before these products appear in the storefront.
 
@@ -38,9 +40,13 @@ https://kicks-topaz-eight.vercel.app/api/paystack/webhook
 Callback verification requires the signed-in customer. The signed webhook can finish an order independently.
 
 ## Email operation
-Registration creates one welcome event; a verified sign-in creates one event per Supabase session; successful order completion queues one receipt. Provider rejections are retried on subsequent sign-in or POST /api/commerce with action emails and a valid user bearer token, up to five attempts.
-Sending events with uncertain outcomes are never automatically reclaimed: inspect MailerSend Activity using the `x-message-id` before manually resetting one to failed. Provider HTTP acceptance is recorded as sent, not proof of inbox delivery. A future reconciliation worker can automate this audit.
-There is no background email scheduler in this release.
+Registration creates one welcome event; a verified sign-in creates one event per Supabase session; successful payment queues one receipt. Atomic event claims prevent concurrent submissions. Definite provider rejections retry up to five attempts with exponential backoff and Retry-After support. Network timeouts and ambiguous server errors remain quarantined, preventing blind duplicate sends. Interrupted preparation can be reclaimed only when no provider submission was recorded.
+
+The authenticated GET /api/emails/worker processes ten due events and reconciles ten provider messages per run. Configure CRON_SECRET as a strong random secret in Vercel, and MAILERSEND_DOMAIN_ID as the sender domain ID. The MailerSend token needs email-send and activity-read access. Never paste credentials into chat. Vercel cron runs daily at 07:00 UTC; retries may therefore wait until the next daily run. More frequent scheduling requires a compatible Vercel plan. Authenticated customer actions can also process due events.
+
+Provider acceptance is recorded separately from delivery. Reconciliation records queued, sent, delivered, or rejected status from MailerSend activity; delivered does not prove the email was read or placed in the primary inbox. Events with uncertain submission and no provider ID require manual Activity inspection using their kicks-event tag before any reset. No automatic resend occurs for these events. Activity retention can limit reconciliation of older messages.
+
+Catalog migrations preserve existing product names, prices, and variant stock. The reference catalog inserts missing products and variants only. The copy migration removes internal reference wording from descriptions without changing commercial values. Keep Paystack test credentials.
 
 ## Acceptance checks
 Sign in, save profile, add a size, reload and verify cart persistence.

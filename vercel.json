@@ -7,7 +7,14 @@
   ],
   "functions": {
     "api/**/*.js": {
-      "includeFiles": "public/receipt-products/*.png"
+      "includeFiles": "public/receipt-products/*.png",
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/emails/worker",
+      "schedule": "0 7 * * *"
+    }
+  ]
 }

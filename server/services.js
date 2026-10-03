@@ -1,3 +1,4 @@
+import { retryAt, submissionResult } from './email-delivery.js'
 import { receiptImages, productImage } from './receipt-images.js'
 import { createClient } from '@supabase/supabase-js'
 import { createHmac, timingSafeEqual } from 'node:crypto'
@@ -53,9 +54,9 @@ export async function orderSummary(db,user,reference) {
  const payment=result(await db.from('payments').select('*,orders!inner(*,order_items(*))').eq('reference',reference).single());
  if(payment.orders.user_id!==user.id)throw publicError('This order belongs to a different account.',403);
  const order=payment.orders;
- let receiptStatus='unavailable';
- try {const receipt=result(await db.from('email_events').select('status').eq('user_id',user.id).eq('order_id',order.id).eq('kind','receipt').maybeSingle());receiptStatus=receipt?.status||'not_queued'}catch{}
- return {id:order.id,status:order.status,mode:order.mode,total:order.total_kobo,delivery:order.delivery,items:order.order_items,receiptStatus};
+ let receiptStatus='unavailable',receiptDelivery='unknown';
+ try {const receipt=result(await db.from('email_events').select('status,delivery_status').eq('user_id',user.id).eq('order_id',order.id).eq('kind','receipt').maybeSingle());receiptStatus=receipt?.status||'not_queued';receiptDelivery=receipt?.delivery_status||'unknown'}catch{}
+ return {id:order.id,status:order.status,mode:order.mode,total:order.total_kobo,delivery:order.delivery,items:order.order_items,receiptStatus,receiptDelivery};
 }
 export const escapeHtml = value => String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const money = value => new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN'}).format(value/100);
@@ -80,15 +81,16 @@ export function receiptHtml(order,items,reference,imageSources=new Map()) {
   const image=imageSources.get(productImage(item))||receiptImageUrl(productImage(item));
   return `<tr><td style="padding:12px 0">${image?`<img src="${escapeHtml(image)}" alt="${escapeHtml(item.name)}" width="88" height="88" style="display:block;object-fit:contain;border-radius:8px"/>`:''}</td><td style="padding:12px 8px">${escapeHtml(item.name)} / EU ${escapeHtml(item.size)} × ${item.quantity}</td><td>${money(item.unit_price_kobo*item.quantity)}</td></tr>`;
  }).join('');
- return `<div style="background:#f4f0e8;padding:24px;font-family:Arial,sans-serif;color:#222"><div style="max-width:560px;margin:auto;background:white;padding:32px;border-top:8px solid #bd4f2b"><h1 style="font-style:italic">kicks.</h1><p>${order.mode==='live'?'Order receipt':order.mode==='demo'?'Simulated order — no money charged':'Test order — no money charged'}</p><p>Order ${escapeHtml(order.id)}<br>${escapeHtml(reference)}</p><table style="width:100%">${rows}</table><h2>Total: ${money(order.total_kobo)}</h2><p>${escapeHtml(order.delivery.name)}<br>${escapeHtml(order.delivery.address)}<br>${escapeHtml(order.delivery.phone)}</p><p>Thanks for shopping with Kicks.</p></div></div>`;
+ return `<div style="background:#f4f0e8;padding:16px;font-family:Arial,sans-serif;color:#222"><div style="max-width:624px;margin:auto;background:#fff3e7;border-top:8px solid #bd4f2b"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td align="center" style="padding:24px 8px 12px;color:#bd4f2b;font-size:104px;line-height:1;font-weight:900;letter-spacing:-7px;font-style:italic">KICKS</td></tr><tr><td align="center" style="padding:0 16px 24px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#713a29">A fresh pair. A different pace.</td></tr><tr><td style="padding:24px;background:#fff"><h1 style="margin:0 0 20px;font-size:24px">${order.mode==='live'?'Order receipt':order.mode==='demo'?'Simulated order — no money charged':'Test order — no money charged'}</h1><p style="font-size:12px;line-height:1.7;overflow-wrap:anywhere;word-break:break-all">Order ${escapeHtml(order.id)}<br>${escapeHtml(reference)}</p><table style="width:100%;border-collapse:collapse">${rows}</table><h2 style="border-top:1px solid #eadfd4;padding-top:20px">Total: ${money(order.total_kobo)}</h2><p style="line-height:1.7">${escapeHtml(order.delivery.name)}<br>${escapeHtml(order.delivery.address)}<br>${escapeHtml(order.delivery.phone)}</p><p style="margin:24px 0 0;color:#713a29">Thanks for shopping with Kicks.</p></td></tr><tr><td align="center" aria-hidden="true" style="padding:20px 8px 16px;background:#fff3e7;color:#e59a70;font-size:104px;line-height:1;font-weight:900;letter-spacing:-7px;font-style:italic">KICKS</td></tr></table></div></div>`;
 }
-export async function sendPending(db,user) {
+export async function sendPending(db,user,{events:providedEvents,now=Date.now(),limit=10}={}) {
  const outcome={failed:0,uncertain:0,error:null,messageIds:[]};
- const events=result(await db.from('email_events').select('*').eq('user_id',user.id).in('status',['pending','failed']).lt('attempts',5));
+ const events=providedEvents||result(await db.from('email_events').select('*').eq('user_id',user.id).in('status',['pending','failed']).lte('next_attempt_at',new Date(now).toISOString()).order('created_at').limit(limit).lt('attempts',5));
  for(const event of events) {
-  const claimed=result(await db.from('email_events').update({status:'sending',attempts:event.attempts+1}).eq('id',event.id).eq('status',event.status).eq('attempts',event.attempts).select('id'));
+  if(event.user_id&&event.user_id!==user.id)throw new Error('Email event owner mismatch');
+  const claimed=result(await db.from('email_events').update({status:'sending',attempts:event.attempts+1,claimed_at:new Date(now).toISOString(),submitted_at:null}).eq('id',event.id).eq('status',event.status).eq('attempts',event.attempts).select('id'));
   if(!claimed.length) continue;
-  let submitted=false;
+  let submitted=false,acknowledged=null;
   try {
    let attachments=[];
    let html=event.kind==='signin'?signInHtml(user):welcomeHtml(user), subject=event.kind==='signin'?'You’re signed in to Kicks':'Welcome to Kicks', recipient=user.email;
@@ -99,17 +101,22 @@ export async function sendPending(db,user) {
     html=receiptHtml(order,order.order_items,order.payments?.reference||order.payments?.[0]?.reference||order.id,images.sources); subject=`Kicks ${order.mode} order receipt`; recipient=order.delivery.email;
    }
    const key=required('MAILERSEND_API_KEY'),fromEmail=required('MAILERSEND_FROM_EMAIL'),fromName=required('MAILERSEND_FROM_NAME'),replyTo=required('MAILERSEND_REPLY_TO_EMAIL');
+   result(await db.from('email_events').update({submitted_at:new Date(now).toISOString()}).eq('id',event.id));
    submitted=true;
-   const response=await fetch('https://api.mailersend.com/v1/email',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from:{email:fromEmail,name:fromName},to:[{email:recipient}],reply_to:{email:replyTo},subject,html,...(attachments.length?{attachments}:{})}),signal:AbortSignal.timeout(15000)});
-   if(!response.ok) { const message=response.status===401?'MailerSend rejected the API token. Check MAILERSEND_API_KEY.':response.status===403?'MailerSend denied sending access. Check the token permissions and sender configuration.':response.status===422?'MailerSend rejected the sender or message fields. Check MAILERSEND_FROM_EMAIL, MAILERSEND_FROM_NAME, MAILERSEND_REPLY_TO_EMAIL, and the recipient.':response.status===429?'MailerSend rate limit reached. Retry after the provider limit resets.':'MailerSend rejected the email. Check the sender and message configuration.'; const error=publicError(message); error.definite=true; throw error }
-   const messageId=response.headers?.get?.('x-message-id');if(messageId)outcome.messageIds.push(messageId);
-   result(await db.from('email_events').update({status:'sent',sent_at:new Date().toISOString(),last_error:null}).eq('id',event.id));
+   const response=await fetch('https://api.mailersend.com/v1/email',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from:{email:fromEmail,name:fromName},to:[{email:recipient}],reply_to:{email:replyTo},subject,html,tags:[`kicks-event-${event.id}`],...(attachments.length?{attachments}:{})}),signal:AbortSignal.timeout(15000)});
+   if(!response.ok) { const message=response.status===401?'MailerSend rejected the API token. Check MAILERSEND_API_KEY.':response.status===403?'MailerSend denied sending access. Check the token permissions and sender configuration.':response.status===422?'MailerSend rejected the sender or message fields. Check MAILERSEND_FROM_EMAIL, MAILERSEND_FROM_NAME, MAILERSEND_REPLY_TO_EMAIL, and the recipient.':response.status===429?'MailerSend rate limit reached. Retry after the provider limit resets.':'MailerSend rejected the email. Check the sender and message configuration.'; const error=publicError(message); error.definite=response.status>=400&&response.status<500;error.retryAfter=response.headers?.get?.('retry-after');throw error }
+   acknowledged=await submissionResult(response);
+   if(acknowledged.messageId)outcome.messageIds.push(acknowledged.messageId);
+   const uncertain=acknowledged.deliveryStatus==='uncertain';
+   result(await db.from('email_events').update({status:uncertain?'sending':'sent',provider_message_id:acknowledged.messageId,delivery_status:acknowledged.deliveryStatus,sent_at:new Date(now).toISOString(),last_error:uncertain?'Provider response needs review':acknowledged.deliveryStatus==='rejected'?'Recipient suppressed by provider':null}).eq('id',event.id));
+   if(uncertain){outcome.uncertain++;outcome.error='Email submission needs review in MailerSend Activity.'}
+
   } catch(error) {
    // Ambiguous network outcomes stay claimed to avoid sending a duplicate automatically.
    const retryable=!submitted||error.definite;
    if(retryable)outcome.failed++;else outcome.uncertain++;
    outcome.error=error.public?error.message:retryable?'Email preparation failed. Check the server email configuration.':'Email delivery is uncertain. Check MailerSend Activity before retrying.';
-   result(await db.from('email_events').update({status:retryable?'failed':'sending',last_error:retryable?'Email preparation or provider rejection; retry available':'Delivery uncertain; inspect provider logs before retry'}).eq('id',event.id));
+   result(await db.from('email_events').update({status:retryable?'failed':'sending',delivery_status:retryable?'unknown':acknowledged?.deliveryStatus||'uncertain',provider_message_id:acknowledged?.messageId||null,next_attempt_at:retryAt(event.attempts+1,now,error.retryAfter),last_error:retryable?'Email preparation or provider rejection; retry available':'Delivery uncertain; inspect provider logs before retry'}).eq('id',event.id));
   }
  }
  return outcome;

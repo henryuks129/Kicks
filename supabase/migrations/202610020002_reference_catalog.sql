@@ -8,9 +8,7 @@ insert into public.products(id,brand,name,color,category,description,image,price
 ('navy-embroidered-clog','Kicks Select','Embroidered Suede Clog','Navy / Cream','Slip-ons','A navy suede clog with flowing contrast embroidery and a buckle strap. Demo product based on the supplied visual reference.','navy-embroidered-clog-reference-cutout',7800000),
 ('botanical-loafer','Kicks Select','Botanical Penny Loafer','Black / Ivory','Slip-ons','A classic loafer shape with a botanical painted vamp. Demo product based on the supplied visual reference.','botanical-loafer-reference-cutout',12500000),
 ('koi-loafer','Kicks Select','Koi Painted Loafer','Black / Cream','Slip-ons','A black-and-cream loafer pair with painted koi details. Demo product based on the supplied visual reference.','koi-loafer-reference-cutout',12500000)
-on conflict(id) do update set
- brand=excluded.brand,name=excluded.name,color=excluded.color,category=excluded.category,
- description=excluded.description,image=excluded.image,price_kobo=excluded.price_kobo,active=true;
+on conflict(id) do nothing;
 
 insert into public.product_variants(product_id,size,stock)
 select p.id,s,10 from public.products p

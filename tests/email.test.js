@@ -2,17 +2,17 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { sendPending, sendAfterPayment, welcomeHtml, receiptHtml } from '../server/services.js'
 
-function queue(kind='welcome',order=null) {
- const updates=[];let status='pending',attempts=0;
+function queue(kind='welcome',order=null,initial={}) {
+ const updates=[];let status='pending',attempts=initial.attempts||0,nextAttempt=initial.next_attempt_at||'1970-01-01T00:00:00.000Z',due=Infinity;
  const db={from(table){
-  let update;
+  let update;const filters=[];
   const query={
-   select(){if(update){status=update.status;attempts=update.attempts;return Promise.resolve({data:[{id:'event'}]})}return query},
-   eq(){return query},in(){return query},
+   select(){if(update){if(filters.some(([key,value])=>(key==='status'?status:key==='attempts'?attempts:value)!==value))return Promise.resolve({data:[]});status=update.status??status;attempts=update.attempts??attempts;return Promise.resolve({data:[{id:'event'}]})}return query},
+   eq(key,value){if(update)filters.push([key,value]);return query},in(){return query},lte(column,value){if(column==='next_attempt_at')due=Date.parse(value);return query},order(){return query},limit(){return query},
    single(){assert.equal(table,'orders');return Promise.resolve({data:order})},
-   lt(){return Promise.resolve({data:['pending','failed'].includes(status)?[{id:'event',kind,status,attempts}]:[]})},
+   lt(){return Promise.resolve({data:['pending','failed'].includes(status)&&Date.parse(nextAttempt)<=due?[{id:'event',kind,status,attempts}]:[]})},
    update(value){update=value;updates.push(value);return query},
-   then(resolve,reject){if(update){status=update.status;attempts=update.attempts??attempts}return Promise.resolve({data:[]}).then(resolve,reject)},
+   then(resolve,reject){if(update){status=update.status??status;attempts=update.attempts??attempts;nextAttempt=update.next_attempt_at??nextAttempt}return Promise.resolve({data:[]}).then(resolve,reject)},
   };
   return query;
  }};
@@ -122,4 +122,49 @@ test('local receipt sends embedded catalog thumbnails and is not duplicated',asy
   globalThis.fetch=originalFetch;
   for(const name of names){if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name]}
  }
+});
+
+async function withMailer(fetcher,work) {
+ const names=['MAILERSEND_API_KEY','MAILERSEND_FROM_EMAIL','MAILERSEND_FROM_NAME','MAILERSEND_REPLY_TO_EMAIL'];
+ const previous=Object.fromEntries(names.map(name=>[name,process.env[name]])),originalFetch=globalThis.fetch;
+ Object.assign(process.env,{MAILERSEND_API_KEY:'test-placeholder',MAILERSEND_FROM_EMAIL:'shop@example.com',MAILERSEND_FROM_NAME:'Kicks',MAILERSEND_REPLY_TO_EMAIL:'reply@example.com'});
+ globalThis.fetch=fetcher;
+ try {await work()}finally {globalThis.fetch=originalFetch;for(const name of names){if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name]}}
+}
+test('rate-limited emails wait for backoff before retrying',async()=>{
+ let calls=0;const now=Date.parse('2026-10-02T12:00:00Z');
+ await withMailer(async()=>{calls++;return new Response('',{status:429,headers:{'retry-after':'120'}})},async()=>{
+  const {db,updates}=queue();const user={id:'buyer',email:'buyer@example.com'};
+  await sendPending(db,user,{now});
+  assert.equal(updates.at(-1).next_attempt_at,'2026-10-02T12:02:00.000Z');
+  await sendPending(db,user,{now:now+60000});assert.equal(calls,1);
+  await sendPending(db,user,{now:now+120000});assert.equal(calls,2);
+ });
+});
+test('network uncertainty and provider server errors cannot trigger duplicate resubmission',async()=>{
+ for(const fetcher of [async()=>{throw new Error('timeout')},async()=>new Response('',{status:500})]) {
+  let calls=0;
+  await withMailer(async(...args)=>{calls++;return fetcher(...args)},async()=>{
+   const {db,updates}=queue();const user={id:'buyer',email:'buyer@example.com'};
+   const outcome=await sendPending(db,user);await sendPending(db,user);
+   assert.equal(outcome.uncertain,1);assert.equal(calls,1);assert.equal(updates.at(-1).delivery_status,'uncertain');
+  });
+ }
+});
+test('suppression and paused sending are not misreported as delivery',async()=>{
+ for(const [response,deliveryStatus] of [
+  [new Response(JSON.stringify({warnings:[{type:'ALL_SUPPRESSED'}]}),{status:202}),'rejected'],
+  [new Response('',{status:202,headers:{'x-message-id':'paused-id','x-send-paused':'true'}}),'paused']
+ ])await withMailer(async()=>response,async()=>{
+  const {db,updates}=queue();await sendPending(db,{id:'buyer',email:'buyer@example.com'});
+  assert.equal(updates.at(-1).delivery_status,deliveryStatus);assert.equal(updates.at(-1).status,'sent');
+ });
+});
+test('concurrent queue processing submits an event only once',async()=>{
+ let calls=0;
+ await withMailer(async()=>{calls++;return new Response('',{status:202,headers:{'x-message-id':'unique-id'}})},async()=>{
+  const {db,updates}=queue();const user={id:'buyer',email:'buyer@example.com'};
+  await Promise.all([sendPending(db,user),sendPending(db,user)]);
+  assert.equal(calls,1);assert.equal(updates.at(-1).provider_message_id,'unique-id');
+ });
 });
