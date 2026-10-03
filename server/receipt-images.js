@@ -16,16 +16,27 @@ export async function receiptImages(items) {
   try {images.set(image,(await readFile(join(process.cwd(),'public','receipt-products',`${key}.png`))).toString('base64'))}
   catch(error) {if(error.code!=='ENOENT')throw error}
  }
- const height=Math.max(128,items.length*128)
- const rows=items.map((item,index)=>{
-  const y=index*128, image=images.get(productImage(item))
+ const height=Math.max(256,items.length*256),layers=[]
+ const font=join(process.cwd(),'public','fonts','NotoSans-Regular.ttf')
+ const brandFont=join(process.cwd(),'public','fonts','NotoSans-BoldItalic.ttf')
+ // Explicit font files keep both letters and currency symbols independent of server fonts.
+ async function textLayer(value,size,left,top,{color='#222222',maxWidth=560,brand=false}={}) {
+  const rendered=await sharp({text:{text:`<span foreground="${color}">${escapeHtml(value)}</span>`,font:`Noto Sans ${brand?'Bold Italic ':''}${size}`,fontfile:brand?brandFont:font,rgba:true,dpi:72}}).png().toBuffer()
+  const {data,info}=await sharp(rendered).resize({width:maxWidth,withoutEnlargement:true}).png().toBuffer({resolveWithObject:true})
+  layers.push({input:data,left:left===null?Math.floor((1152-info.width)/2):left<0?1152+left-info.width:left,top})
+ }
+ for(const [index,item] of items.entries()) {
+  const y=index*256,image=images.get(productImage(item))
+  await textLayer('KICKS',240,null,y+12,{color:'#f4d8c5',maxWidth:950,brand:true})
+  if(image)layers.push({input:await sharp(Buffer.from(image,'base64')).resize(192,192).png().toBuffer(),left:0,top:y+32})
   const words=String(item.name||'Shoe').split(/\s+/),lines=['']
   for(const word of words){const last=lines.length-1;if(lines[last]&&(lines[last]+' '+word).length>28)lines.push(word);else lines[last]+=(lines[last]?' ':'')+word}
-  const name=lines.slice(0,2).map((line,i)=>`<text x="112" y="${y+44+i*22}" font-size="17" font-weight="600">${escapeHtml(line)}</text>`).join('')
-  return `<text x="288" y="${y+94}" text-anchor="middle" font-size="132" font-weight="900" font-style="italic" letter-spacing="-8" fill="#f4d8c5">KICKS</text>${image?`<image href="data:image/png;base64,${image}" x="0" y="${y+16}" width="96" height="96"/>`:''}<g fill="#222">${name}<text x="112" y="${y+96}" font-size="14">EU ${escapeHtml(item.size)} × ${escapeHtml(item.quantity)}</text><text x="572" y="${y+64}" text-anchor="end" font-size="17" font-weight="600">${escapeHtml(money(item.unit_price_kobo*item.quantity))}</text></g><line x1="0" x2="576" y1="${y+127}" y2="${y+127}" stroke="#d8c7b8"/>`
- }).join('')
- const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="576" height="${height}" font-family="Arial,Helvetica,sans-serif"><rect width="576" height="${height}" fill="#fffdf9"/>${rows}</svg>`
- const content=await sharp(Buffer.from(svg)).resize(1152,height*2).png().toBuffer()
+  for(const [lineIndex,line] of lines.slice(0,2).entries())await textLayer(line,34,224,y+48+lineIndex*44,{maxWidth:550})
+  await textLayer(`EU ${item.size} × ${item.quantity}`,28,224,y+160,{maxWidth:550})
+  await textLayer(money(item.unit_price_kobo*item.quantity),34,-8,y+100,{maxWidth:350})
+  layers.push({input:{create:{width:1152,height:2,channels:4,background:'#d8c7b8'}},left:0,top:y+254})
+ }
+ const content=await sharp({create:{width:1152,height,channels:4,background:'#fffdf9'}}).composite(layers).png().toBuffer()
  const id='receipt-items@kicks'
  return {sources:new Map([['kicks-items',`cid:${id}`]]),attachments:[{filename:'kicks-order-items.png',content:content.toString('base64'),disposition:'inline',id}]}
 }

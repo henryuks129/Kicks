@@ -7,7 +7,7 @@
   ],
   "functions": {
     "api/**/*.js": {
-      "includeFiles": "public/receipt-products/*.png",
+      "includeFiles": "public/{receipt-products/*.png,fonts/*}",
       "maxDuration": 60
     }
   },

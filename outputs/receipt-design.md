@@ -11,3 +11,5 @@ Account email behavior: welcome events are unique per customer; sign-in events a
 Files: server/receipt-images.js, server/email-format.js, server/services.js, src/components/Checkout.jsx, tests/email.test.js, tests/payments.test.js, tests/receipt-images.test.js, scripts/build-receipt-images.js, package.json and package-lock.json.
 
 Verification: generated item panel inspected with synthetic order data; tests, production build, Fallow and whitespace checks. Gmail delivery rendering still needs a new receipt. Restart the local Vite server so its imported API/template code reloads; deployed callbacks use the deployed code and need the local commits pushed by the user. Existing emails cannot update.
+
+Font fix: Bundle Noto Sans Regular and Bold Italic (SIL OFL) and include them in Vercel functions. Render all item-panel text with Sharp fontfile explicitly instead of SVG system fonts. Verify a synthetic panel in an isolated process with an empty Fontconfig configuration to reproduce a server with no installed fonts.
