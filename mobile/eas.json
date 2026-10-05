@@ -1,7 +1,7 @@
 {
  "build": {
-  "development": { "developmentClient": true, "distribution": "internal" },
-  "preview": { "distribution": "internal" },
-  "production": {}
+  "development": { "node": "22.22.0", "developmentClient": true, "distribution": "internal" },
+  "preview": { "node": "22.22.0", "distribution": "internal" },
+  "production": { "node": "22.22.0" }
  }
 }
