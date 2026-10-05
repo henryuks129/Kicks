@@ -1,17 +1,12 @@
 import { ArrowLeft, ArrowUpRight, MapPin } from 'lucide-react'
 
-const regions = [
-  {name:'The Court',category:'Court',tag:'Hard lines · quick feet',left:'19%',top:'34%',color:'bg-[#bd4f2b]'},
-  {name:'The Terrace',category:'Lifestyle',tag:'Everyday icons · easy pace',left:'61%',top:'24%',color:'bg-[#6d8062]'},
-  {name:'The Track',category:'Sport style',tag:'Built to move · layered forms',left:'46%',top:'65%',color:'bg-[#c4a86b]'},
-  {name:'The Studio',category:'Slip-ons',tag:'Odd details · considered craft',left:'78%',top:'63%',color:'bg-[#788c90]'},
-]
+import { styleRegions as regions } from '../../shared/style-regions.js'
 
 export function ShoeAtlas({onChoose}) {
   return <main className="mx-auto max-w-[1500px] px-5 py-9 md:px-12 md:py-14">
     <a href="#shop" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/> Back to the shop</a>
     <div className="mt-7 flex flex-wrap items-end justify-between gap-5">
-      <div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">A guide to the rotation</p><h1 className="mt-3 text-5xl font-black leading-[.9] tracking-[-.06em] md:text-7xl">THE SHOE ATLAS</h1></div>
+      <div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">A guide to the rotation</p><h1 className="mt-3 text-[clamp(2.5rem,5vw,4.5rem)] font-normal leading-[1.08] tracking-[-.015em]">THE SHOE ATLAS</h1></div>
       <p className="max-w-sm pb-1 text-base leading-7 text-muted-foreground">Every pair has its place. Pick a terrain to find the styles that belong there.</p>
     </div>
     <p className="mt-8 flex items-center gap-2 text-sm font-medium"><MapPin size={16} className="text-primary"/> Choose a district</p>

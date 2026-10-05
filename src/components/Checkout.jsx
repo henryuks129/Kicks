@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { money } from '../data/products'
+import { updateProfile } from '../../shared/mobile-profile.js'
 import { api, supabase } from '../lib/commerce'
 export function Checkout({items}) {
  const [profile,setProfile]=useState({name:'',phone:'',address:''}),[email,setEmail]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -12,7 +13,7 @@ export function Checkout({items}) {
    if(!supabase)throw new Error('Supabase is not configured.');
    const {data:{user}}=await supabase.auth.getUser();
    if(!user)throw new Error('Sign in again to continue.');
-   const saved=await supabase.from('profiles').update({name:profile.name.trim(),phone:profile.phone.trim(),address:profile.address.trim()}).eq('id',user.id);if(saved.error)throw saved.error;
+   await updateProfile(supabase,user.id,profile);
    const result=await api('checkout');
    if(!result.url)throw new Error('Checkout did not return a payment link. Please try again.');
    window.location.assign(result.url);

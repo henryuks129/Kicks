@@ -10,6 +10,10 @@ In the Supabase SQL Editor, run these files in order, once:
 4. supabase/migrations/202610020002_reference_catalog.sql
 5. supabase/migrations/202610020003_email_reliability.sql
 6. supabase/migrations/202610020004_catalog_copy.sql
+7. supabase/migrations/202610030001_cart_realtime.sql
+8. supabase/migrations/202610040001_reference_shoes.sql
+
+For an existing configured store, do not rerun the base schema. Run `outputs/supabase-readiness.sql` first. If the cart policy/function/trigger checks are missing, apply migration 7. Apply migration 8 to add the four new demo shoes and missing variants; it preserves existing prices and stock. These two migrations can safely be rerun. The audit is read-only and does not confirm provider credentials or successful cross-device delivery.
 
 Alternatively use Supabase CLI migrations against the correct linked project. The reference catalog migration adds six image-backed demo products and EU 39–45 variants. Prices and stock remain illustrative until seller data is confirmed. Apply it to the connected Supabase project before these products appear in the storefront.
 

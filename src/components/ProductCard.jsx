@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowUpRight, ChevronDown, Plus } from 'lucide-react'
-import { money, photo } from '../data/products'
+import { money } from '../data/products'
+import { ShoeStage } from './ShoeStage'
 import { Button } from './ui/button'
 
 export function ProductCard({product,onAdd,busy}) {
@@ -14,7 +15,7 @@ export function ProductCard({product,onAdd,busy}) {
  }
  return <article>
   <a href={`#product/${product.id}`} className="group block">
-   <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-muted"><img src={photo(product.image)} alt={`${product.brand} ${product.name}, ${product.color}`} loading="lazy" className="h-[85%] w-[85%] object-contain transition-transform duration-500 motion-safe:group-hover:-translate-y-3 motion-safe:group-hover:-rotate-6"/></div>
+   <ShoeStage image={product.image} name={`${product.brand} ${product.name}, ${product.color}`} compact/>
    <div className="mt-4 flex justify-between gap-3"><div><p className="mb-1 text-xs text-muted-foreground">{product.brand} / {product.category}</p><h3 className="text-xl font-bold tracking-tight">{product.name}</h3><p className="mt-1 text-sm text-muted-foreground">{product.color}</p></div><div className="text-right"><p className="text-sm font-semibold">{money(product.price)}</p><ArrowUpRight className="mt-4 ml-auto" size={20}/></div></div>
   </a>
   <form onSubmit={add} className="mt-5">

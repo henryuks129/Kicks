@@ -1,0 +1,1 @@
+export function selectProducts<T extends {brand:string;name:string;color?:string;category?:string;price?:number;price_kobo?:number}>(products:T[], options?:{filter?:string;query?:string;sort?:string}):T[];

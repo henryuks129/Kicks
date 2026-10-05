@@ -31,6 +31,6 @@ export default async function handler(req,res) {
   const local=req.localDevelopment===true&&callback.protocol==='http:'&&['localhost','127.0.0.1'].includes(callback.hostname);
   if(callback.protocol!=='https:'&&!local) {const error=new Error('VITE_APP_URL must use HTTPS on a deployed storefront.');error.public=true;error.status=503;throw error}
   const transaction=await paystack('transaction/initialize',{email:user.email,amount:order.amount,currency:'NGN',reference:order.reference,callback_url:`${origin.replace(/\/$/,'')}/payment/callback`});
-  return res.json({url:transaction.authorization_url});
+  return res.json({url:transaction.authorization_url,reference:order.reference});
  } catch(error) { return res.status(error.status||400).json({error:error.public?error.message:'Unable to complete request. Check your details and server configuration.'}) }
 }

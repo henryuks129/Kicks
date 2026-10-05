@@ -43,3 +43,19 @@ work/
 test-results/
 playwright-report/
 blob-report/
+
+# Local mobile connection configuration
+mobile/public-config.json
+# Unused Expo template media; the app uses existing Kicks assets
+mobile/assets/
+
+# Local design experiments and checkpoints
+.claude/
+output/
+outputs/cursor/
+outputs/*checkpoint*
+public/design-scenes/
+public/media/
+public/cursor-kicks.svg
+public/paper-grain.svg
+public/fonts/BarlowCondensed-ExtraBold.ttf

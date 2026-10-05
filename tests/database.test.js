@@ -28,6 +28,10 @@ test('migrations, customer isolation, server authority and payment idempotency',
  assert.equal((await db.query("select stock from product_variants where product_id='koi-loafer' and size=42")).rows[0].stock,3);
  assert.equal((await db.query("select price_kobo from products where id='koi-loafer'")).rows[0].price_kobo,12340000);
  assert.ok(!(await db.query("select description from products where id='koi-loafer'")).rows[0].description.includes('supplied visual reference'));
+ const shoes=await readFile(new URL('../supabase/migrations/202610040001_reference_shoes.sql',import.meta.url),'utf8');
+ await db.exec(shoes);await db.exec(shoes);
+ assert.equal((await db.query('select count(*)::integer as count from products')).rows[0].count,16);
+ assert.equal((await db.query("select stock from product_variants where product_id='koi-loafer' and size=42")).rows[0].stock,3);
  const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
  await db.query('insert into auth.users(id) values($1),($2)',[a,b]);
  assert.equal((await db.query('select * from public.email_events')).rows.length,2);

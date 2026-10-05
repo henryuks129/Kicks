@@ -1,23 +1,34 @@
 @import "tailwindcss";
+@font-face { font-family: "Anton"; src: url("/fonts/Anton-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Manrope"; src: url("/fonts/Manrope-Variable.ttf") format("truetype"); font-weight: 200 800; font-style: normal; font-display: swap; }
 @theme {
-  --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
-  --color-background: #f4f2eb;
-  --color-foreground: #22231f;
+  --font-sans: "Manrope", sans-serif;
+  --font-display: "Anton", sans-serif;
+  --color-forest: #283e32;
+  --color-sky: #bdd5df;
+  --color-cream: #fff9f2;
+  --color-background: #f4f1e9;
+  --color-foreground: #191a17;
   --color-muted: #e8e6de;
   --color-muted-foreground: #606158;
-  --color-primary: #bd4f2b;
+  --color-primary: #b84c26;
   --color-primary-foreground: #fff9f2;
   --color-border: #cfcec5;
-  --color-ring: #bd4f2b;
+  --color-ring: #b84c26;
 }
 @layer base {
   body { @apply m-0 bg-background font-sans text-foreground antialiased; }
-  h1, h2 { font-family: var(--font-display); }
+  h1, h2 { font-family: var(--font-display); font-weight: 400; font-synthesis: none; }
+  body { font-optical-sizing: auto; line-height: 1.5; }
+  ::selection { background: #b84c26; color: #fff9f2; }
+  input, textarea { caret-color: #b84c26; }
+  html { scrollbar-color: #b84c26 #f4f1e9; }
+  summary { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring; }
   button, a, input, select { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring; }
   button:not(:disabled), select { cursor: pointer; }
 }
 @media (hover: hover) and (pointer: fine) {
-  body { cursor: url('/cursor-sole.svg') 5 3, auto; }
-  a, button:not(:disabled), select, summary { cursor: url('/cursor-sole.svg') 5 3, pointer; }
+  body { cursor: url('/cursor-kicks-text.png') 24 22, auto; }
+  a, button:not(:disabled), select, summary, .cursor-pointer { cursor: url('/cursor-kicks-text.png') 24 22, pointer; }
+  input, textarea, [contenteditable="true"] { cursor: text; }
 }
