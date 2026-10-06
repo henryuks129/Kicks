@@ -3,8 +3,24 @@ import { ArrowRight, Check, LoaderCircle, Mail, MapPin, ShoppingBag } from 'luci
 import { api } from '../lib/commerce'
 import { money, photo } from '../data/products'
 import { Button } from './ui/button'
+import { mobilePaymentReturnUrl } from '../../shared/payment-return'
 
 export function PaymentReturn({user,onRefresh,products,login}) {
+ if (new URLSearchParams(location.search).get('platform') === 'mobile') return <MobilePaymentReturn/>;
+ return <WebPaymentReturn user={user} onRefresh={onRefresh} products={products} login={login}/>;
+}
+
+function MobilePaymentReturn() {
+ useEffect(() => { window.location.replace(mobilePaymentReturnUrl); }, []);
+ return <main id="main" className="mx-auto max-w-lg space-y-6 px-5 py-10">
+  <h1 className="text-4xl font-black">RETURN TO KICKS.</h1>
+  <p className="leading-7 text-muted-foreground">Finish checking your payment in the Kicks app. Your signed-in app account will verify the payment securely.</p>
+  <Button asChild><a href={mobilePaymentReturnUrl}>Open Kicks <ArrowRight size={16}/></a></Button>
+  <p className="text-sm leading-6 text-muted-foreground">If the app does not open, close this browser and choose Check payment status in Checkout. Please don’t pay again.</p>
+ </main>;
+}
+
+function WebPaymentReturn({user,onRefresh,products,login}) {
  const [order,setOrder]=useState(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const reference=new URLSearchParams(location.search).get('reference');
  useEffect(()=>{

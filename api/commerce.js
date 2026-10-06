@@ -1,4 +1,5 @@
 import { admin, result, userFor, paystack, verify, orderSummary, sendPending, sendAfterPayment } from '../server/services.js'
+import { paymentCallbackUrl } from '../shared/payment-return.js'
 export default async function handler(req,res) {
  res.setHeader('Cache-Control','no-store');
  if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'});
@@ -30,7 +31,7 @@ export default async function handler(req,res) {
   let callback;try{callback=new URL(origin)}catch{const error=new Error('Set VITE_APP_URL to the storefront URL on the server, then restart or redeploy.');error.public=true;error.status=503;throw error}
   const local=req.localDevelopment===true&&callback.protocol==='http:'&&['localhost','127.0.0.1'].includes(callback.hostname);
   if(callback.protocol!=='https:'&&!local) {const error=new Error('VITE_APP_URL must use HTTPS on a deployed storefront.');error.public=true;error.status=503;throw error}
-  const transaction=await paystack('transaction/initialize',{email:user.email,amount:order.amount,currency:'NGN',reference:order.reference,callback_url:`${origin.replace(/\/$/,'')}/payment/callback`});
+  const transaction=await paystack('transaction/initialize',{email:user.email,amount:order.amount,currency:'NGN',reference:order.reference,callback_url:paymentCallbackUrl(origin,body.platform)});
   return res.json({url:transaction.authorization_url,reference:order.reference});
  } catch(error) { return res.status(error.status||400).json({error:error.public?error.message:'Unable to complete request. Check your details and server configuration.'}) }
 }
