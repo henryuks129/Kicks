@@ -1,0 +1,82 @@
+# Dependencies and builds
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Secrets and local configuration — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs, caches, and local tooling
+*.log
+.DS_Store
+.idea/
+.vscode/
+.turbo/
+.vercel/
+.cache/
+.npm/
+.eslintcache
+.fallow/
+.kilo/
+.impeccable/
+supabase/.temp/
+supabase/.branches/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Generated media and local QA output
+screenshots/
+recordings/
+tmp/
+work/
+test-results/
+playwright-report/
+blob-report/
+
+# Mobile public connection configuration is tracked; server secrets remain ignored.
+# Unused Expo template media; the app uses existing Kicks assets
+mobile/assets/
+
+# Local design experiments and checkpoints
+.claude/
+output/
+outputs/cursor/
+outputs/*checkpoint*
+public/design-scenes/
+public/media/
+public/cursor-kicks.svg
+public/paper-grain.svg
+public/fonts/BarlowCondensed-ExtraBold.ttf
+
+# Explicit exclusions for cloud APK builds
+.env
+.env.*
+**/.env
+**/.env.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+credentials.json
+**/credentials.json
+.expo/
+.tools/
+.git/
+outputs/
+output/
+mobile/android/
+mobile/ios/
+# Public mobile configuration is required by the bundle
+!mobile/public-config.json
