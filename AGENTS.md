@@ -17,6 +17,7 @@ Build Kicks, a small sneaker storefront. Keep the scope focused: shoe catalog, s
 ## Non-negotiable security rules
 
 - Never read, print, expose, commit, upload, or modify `.env`, `.env.*`, or any secret-bearing file. Treat this as a strict rule.
+- `mobile/public-config.json` is public client configuration and may be inspected, tracked and included in builds. It must contain only `siteUrl`, `supabaseUrl` and `supabasePublishableKey`; never add server credentials or private user data.
 - Use environment variable names and server-side boundaries, but use placeholders in documentation and examples.
 - Keep Paystack secret keys, MailerSend API tokens, and Supabase service-role credentials server-side only. The browser may receive public Supabase configuration and Paystack public key only.
 - Verify Paystack transactions server-side before marking an order paid or sending a paid-order receipt.

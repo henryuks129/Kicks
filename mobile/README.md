@@ -6,7 +6,7 @@ React Native with Expo SDK 55, Expo Router and NativeWind (Tailwind utilities). 
 
 Run mobile commands from the repository’s `mobile/` directory.
 
-Enter connection values yourself in `mobile/public-config.json`. This local file is ignored by Git and must not be inspected, printed or included in agent reports. For another checkout, copy `public-config.example.json` to that filename and replace placeholders locally.
+`mobile/public-config.json` is tracked in Git and included in mobile builds. It contains only the public website URL, Supabase URL and Supabase publishable key. Agents may inspect and validate these public fields; do not print the key in reports. For another deployment, use `public-config.example.json` as the configuration template.
 
 - `siteUrl`: `https://kicks-topaz-eight.vercel.app`
 - `supabaseUrl`: the SAME Supabase project URL used by the website.

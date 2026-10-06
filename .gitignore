@@ -44,8 +44,7 @@ test-results/
 playwright-report/
 blob-report/
 
-# Local mobile connection configuration
-mobile/public-config.json
+# Mobile public connection configuration is tracked; server secrets remain ignored.
 # Unused Expo template media; the app uses existing Kicks assets
 mobile/assets/
 
